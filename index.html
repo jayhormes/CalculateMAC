@@ -4,28 +4,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MAC 地址生成器</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/material-components-web/14.0.0/material-components-web.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/material-components-web/14.0.0/material-components-web.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .mdc-text-field, .mdc-button {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        .mdc-data-table {
+            width: 100%;
+            border: none;
+            margin-top: 2rem;
+        }
+        .mdc-data-table__header-cell {
+            font-weight: bold;
+            color: #1976d2;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 p-8">
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
-        <div class="p-8">
-            <h1 class="text-2xl font-bold mb-4">MAC 地址生成器</h1>
-            <div class="mb-4">
-                <label for="startMac" class="block text-sm font-medium text-gray-700">起始 MAC 地址：</label>
-                <input type="text" id="startMac" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="例如：DC85DEDB0264" maxlength="12">
+<body class="mdc-typography">
+    <div class="container">
+        <h1 class="mdc-typography--headline4" style="color: #1976d2; margin-bottom: 2rem;">MAC 地址生成器</h1>
+        
+        <div class="mdc-text-field mdc-text-field--outlined">
+            <input type="text" id="startMac" class="mdc-text-field__input" maxlength="12">
+            <div class="mdc-notched-outline">
+                <div class="mdc-notched-outline__leading"></div>
+                <div class="mdc-notched-outline__notch">
+                    <label for="startMac" class="mdc-floating-label">起始 MAC 地址</label>
+                </div>
+                <div class="mdc-notched-outline__trailing"></div>
             </div>
-            <div class="mb-4">
-                <label for="count" class="block text-sm font-medium text-gray-700">數量：</label>
-                <input type="number" id="count" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" min="1" value="1">
-            </div>
-            <button onclick="generateMacs()" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2">生成 MAC 地址</button>
-            <button onclick="downloadRedmineText()" id="downloadRedmineBtn" class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-2" style="display:none;">下載 Redmine 格式</button>
-            <div id="result" class="mt-4"></div>
         </div>
+
+        <div class="mdc-text-field mdc-text-field--outlined">
+            <input type="number" id="count" class="mdc-text-field__input" min="1" value="1">
+            <div class="mdc-notched-outline">
+                <div class="mdc-notched-outline__leading"></div>
+                <div class="mdc-notched-outline__notch">
+                    <label for="count" class="mdc-floating-label">數量</label>
+                </div>
+                <div class="mdc-notched-outline__trailing"></div>
+            </div>
+        </div>
+
+        <button id="generateBtn" class="mdc-button mdc-button--raised">
+            <span class="mdc-button__label">生成 MAC 地址</span>
+        </button>
+
+        <button id="downloadBtn" class="mdc-button mdc-button--outlined" style="display:none;">
+            <span class="mdc-button__label">下載 Redmine 格式</span>
+        </button>
+
+        <div id="result"></div>
     </div>
 
     <script>
         let generatedMacs = [];
+
+        // 初始化 Material Components
+        mdc.ripple.MDCRipple.attachTo(document.querySelector('.mdc-button'));
+        const textFields = document.querySelectorAll('.mdc-text-field');
+        textFields.forEach(textField => {
+            mdc.textField.MDCTextField.attachTo(textField);
+        });
+
+        document.getElementById('generateBtn').addEventListener('click', generateMacs);
+        document.getElementById('downloadBtn').addEventListener('click', downloadRedmineText);
+
+        // 為數量輸入框添加事件監聽器
+        const countInput = document.getElementById('count');
+        countInput.addEventListener('input', function() {
+            const countTextField = this.closest('.mdc-text-field');
+            if (this.value !== '') {
+                countTextField.classList.add('mdc-text-field--label-floating');
+            } else {
+                countTextField.classList.remove('mdc-text-field--label-floating');
+            }
+        });
+
+        // 初始化時檢查數量輸入框的值
+        if (countInput.value !== '') {
+            countInput.closest('.mdc-text-field').classList.add('mdc-text-field--label-floating');
+        }
 
         function generateMacs() {
             const startMac = document.getElementById('startMac').value.toUpperCase();
@@ -37,18 +113,33 @@
             }
 
             let macInt = parseInt(startMac, 16);
-            let result = '<table class="w-full text-left border-collapse"><tr><th class="border p-2">編號</th><th class="border p-2">MAC 地址</th></tr>';
+            let tableHtml = `
+                <div class="mdc-data-table">
+                    <table class="mdc-data-table__table">
+                        <thead>
+                            <tr class="mdc-data-table__header-row">
+                                <th class="mdc-data-table__header-cell">編號</th>
+                                <th class="mdc-data-table__header-cell">MAC 地址</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
             generatedMacs = [];
 
             for (let i = 0; i < count; i++) {
                 const mac = (macInt + i).toString(16).padStart(12, '0').toUpperCase();
-                result += `<tr><td class="border p-2">${i + 1}</td><td class="border p-2">${mac}</td></tr>`;
+                tableHtml += `
+                    <tr class="mdc-data-table__row">
+                        <td class="mdc-data-table__cell">${i + 1}</td>
+                        <td class="mdc-data-table__cell">${mac}</td>
+                    </tr>
+                `;
                 generatedMacs.push({ number: i + 1, mac: mac });
             }
 
-            result += '</table>';
-            document.getElementById('result').innerHTML = result;
-            document.getElementById('downloadRedmineBtn').style.display = 'block';
+            tableHtml += '</tbody></table></div>';
+            document.getElementById('result').innerHTML = tableHtml;
+            document.getElementById('downloadBtn').style.display = 'inline-flex';
         }
 
         function downloadRedmineText() {
