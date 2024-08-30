@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAC 地址生成器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+        <div class="p-8">
+            <h1 class="text-2xl font-bold mb-4">MAC 地址生成器</h1>
+            <div class="mb-4">
+                <label for="startMac" class="block text-sm font-medium text-gray-700">起始 MAC 地址：</label>
+                <input type="text" id="startMac" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="例如：DC85DEDB0264" maxlength="12">
+            </div>
+            <div class="mb-4">
+                <label for="count" class="block text-sm font-medium text-gray-700">數量：</label>
+                <input type="number" id="count" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" min="1" value="1">
+            </div>
+            <button onclick="generateMacs()" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2">生成 MAC 地址</button>
+            <button onclick="downloadRedmineText()" id="downloadRedmineBtn" class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-2" style="display:none;">下載 Redmine 格式</button>
+            <div id="result" class="mt-4"></div>
+        </div>
+    </div>
+
+    <script>
+        let generatedMacs = [];
+
+        function generateMacs() {
+            const startMac = document.getElementById('startMac').value.toUpperCase();
+            const count = parseInt(document.getElementById('count').value);
+
+            if (!/^[0-9A-F]{12}$/.test(startMac)) {
+                alert('請輸入有效的 MAC 地址（12 個十六進制字符）');
+                return;
+            }
+
+            let macInt = parseInt(startMac, 16);
+            let result = '<table class="w-full text-left border-collapse"><tr><th class="border p-2">編號</th><th class="border p-2">MAC 地址</th></tr>';
+            generatedMacs = [];
+
+            for (let i = 0; i < count; i++) {
+                const mac = (macInt + i).toString(16).padStart(12, '0').toUpperCase();
+                result += `<tr><td class="border p-2">${i + 1}</td><td class="border p-2">${mac}</td></tr>`;
+                generatedMacs.push({ number: i + 1, mac: mac });
+            }
+
+            result += '</table>';
+            document.getElementById('result').innerHTML = result;
+            document.getElementById('downloadRedmineBtn').style.display = 'block';
+        }
+
+        function downloadRedmineText() {
+            let redmineTable = '|編號|MAC 地址|\n';
+            generatedMacs.forEach(item => {
+                redmineTable += `|${item.number}|${item.mac}|\n`;
+            });
+
+            const blob = new Blob([redmineTable], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mac_addresses_redmine_format.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
